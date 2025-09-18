@@ -17,25 +17,23 @@ import { format } from 'date-fns';
 
 interface Account {
   id: string;
-  title: string;
-  description: string;
-  type: 'receivable' | 'payable';
-  amount: number;
-  due_date: string;
-  paid_date?: string;
-  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
-  category: string;
-  customer_id?: string;
-  supplier_id?: string;
+  name: string;
+  type: string;
+  balance: number;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
 }
 
 interface CashFlow {
   id: string;
   description: string;
-  type: 'income' | 'expense';
+  type: string;
   amount: number;
   category: string;
-  date: string;
+  created_at: string;
+  account_id?: string;
+  user_id: string;
 }
 
 export const FinancialManagement = () => {
@@ -47,14 +45,9 @@ export const FinancialManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAccount, setNewAccount] = useState({
-    title: '',
-    description: '',
-    type: 'receivable' as 'receivable' | 'payable',
-    amount: '',
-    due_date: '',
-    category: '',
-    customer_id: '',
-    supplier_id: ''
+    name: '',
+    type: 'checking',
+    balance: '',
   });
 
   useEffect(() => {
@@ -66,18 +59,14 @@ export const FinancialManagement = () => {
   const loadData = async () => {
     try {
       const [accountsData, cashFlowData, customersData, suppliersData] = await Promise.all([
-        supabase.from('accounts').select(`
-          *,
-          customers (name),
-          suppliers (name)
-        `).eq('user_id', user!.id),
+        supabase.from('accounts').select('*').eq('user_id', user!.id),
         supabase.from('cash_flow').select('*').eq('user_id', user!.id),
         supabase.from('customers').select('id, name').eq('user_id', user!.id),
         supabase.from('suppliers').select('id, name').eq('user_id', user!.id)
       ]);
 
-      setAccounts((accountsData.data || []) as Account[]);
-      setCashFlow((cashFlowData.data || []) as CashFlow[]);
+      setAccounts(accountsData.data || []);
+      setCashFlow(cashFlowData.data || []);
       setCustomers(customersData.data || []);
       setSuppliers(suppliersData.data || []);
     } catch (error) {
@@ -91,7 +80,7 @@ export const FinancialManagement = () => {
   };
 
   const createAccount = async () => {
-    if (!user || !newAccount.title || !newAccount.amount || !newAccount.due_date) {
+    if (!user || !newAccount.name || !newAccount.balance) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios.",
@@ -103,14 +92,9 @@ export const FinancialManagement = () => {
     setIsLoading(true);
     try {
       const { error } = await supabase.from('accounts').insert({
-        title: newAccount.title,
-        description: newAccount.description,
+        name: newAccount.name,
         type: newAccount.type,
-        amount: parseFloat(newAccount.amount),
-        due_date: newAccount.due_date,
-        category: newAccount.category,
-        customer_id: newAccount.customer_id || null,
-        supplier_id: newAccount.supplier_id || null,
+        balance: parseFloat(newAccount.balance),
         user_id: user.id
       });
 
@@ -122,14 +106,9 @@ export const FinancialManagement = () => {
       });
 
       setNewAccount({
-        title: '',
-        description: '',
-        type: 'receivable',
-        amount: '',
-        due_date: '',
-        category: '',
-        customer_id: '',
-        supplier_id: ''
+        name: '',
+        type: 'checking',
+        balance: '',
       });
       setIsDialogOpen(false);
       loadData();
@@ -145,13 +124,12 @@ export const FinancialManagement = () => {
     }
   };
 
-  const markAsPaid = async (accountId: string) => {
+  const updateBalance = async (accountId: string, newBalance: number) => {
     try {
       const { error } = await supabase
         .from('accounts')
         .update({ 
-          status: 'paid', 
-          paid_date: new Date().toISOString().split('T')[0] 
+          balance: newBalance
         })
         .eq('id', accountId);
 
@@ -159,11 +137,11 @@ export const FinancialManagement = () => {
 
       toast({
         title: "Sucesso",
-        description: "Conta marcada como paga!",
+        description: "Saldo atualizado com sucesso!",
       });
       loadData();
     } catch (error) {
-      console.error('Erro ao marcar como paga:', error);
+      console.error('Erro ao atualizar saldo:', error);
       toast({
         title: "Erro",
         description: "Erro ao atualizar conta.",
@@ -184,20 +162,17 @@ export const FinancialManagement = () => {
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
-  const totalReceivable = accounts
-    .filter(acc => acc.type === 'receivable' && acc.status === 'pending')
-    .reduce((sum, acc) => sum + acc.amount, 0);
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
 
-  const totalPayable = accounts
-    .filter(acc => acc.type === 'payable' && acc.status === 'pending')
-    .reduce((sum, acc) => sum + acc.amount, 0);
+  const checkingAccounts = accounts.filter(acc => acc.type === 'checking');
+  const savingsAccounts = accounts.filter(acc => acc.type === 'savings');
 
   const monthlyIncome = cashFlow
-    .filter(cf => cf.type === 'income' && cf.date.startsWith(new Date().toISOString().slice(0, 7)))
+    .filter(cf => cf.type === 'income' && cf.created_at.startsWith(new Date().toISOString().slice(0, 7)))
     .reduce((sum, cf) => sum + cf.amount, 0);
 
   const monthlyExpense = cashFlow
-    .filter(cf => cf.type === 'expense' && cf.date.startsWith(new Date().toISOString().slice(0, 7)))
+    .filter(cf => cf.type === 'expense' && cf.created_at.startsWith(new Date().toISOString().slice(0, 7)))
     .reduce((sum, cf) => sum + cf.amount, 0);
 
   return (
@@ -220,57 +195,34 @@ export const FinancialManagement = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Título *</Label>
+                <Label>Nome *</Label>
                 <Input
-                  value={newAccount.title}
-                  onChange={(e) => setNewAccount({ ...newAccount, title: e.target.value })}
-                  placeholder="Título da conta"
+                  value={newAccount.name}
+                  onChange={(e) => setNewAccount({ ...newAccount, name: e.target.value })}
+                  placeholder="Nome da conta"
                 />
               </div>
               <div>
                 <Label>Tipo *</Label>
-                <Select value={newAccount.type} onValueChange={(value: 'receivable' | 'payable') => setNewAccount({ ...newAccount, type: value })}>
+                <Select value={newAccount.type} onValueChange={(value) => setNewAccount({ ...newAccount, type: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="receivable">A Receber</SelectItem>
-                    <SelectItem value="payable">A Pagar</SelectItem>
+                    <SelectItem value="checking">Conta Corrente</SelectItem>
+                    <SelectItem value="savings">Poupança</SelectItem>
+                    <SelectItem value="investment">Investimento</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Valor *</Label>
+                <Label>Saldo Inicial *</Label>
                 <Input
                   type="number"
                   step="0.01"
-                  value={newAccount.amount}
-                  onChange={(e) => setNewAccount({ ...newAccount, amount: e.target.value })}
+                  value={newAccount.balance}
+                  onChange={(e) => setNewAccount({ ...newAccount, balance: e.target.value })}
                   placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label>Data de Vencimento *</Label>
-                <Input
-                  type="date"
-                  value={newAccount.due_date}
-                  onChange={(e) => setNewAccount({ ...newAccount, due_date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Categoria</Label>
-                <Input
-                  value={newAccount.category}
-                  onChange={(e) => setNewAccount({ ...newAccount, category: e.target.value })}
-                  placeholder="Categoria"
-                />
-              </div>
-              <div>
-                <Label>Descrição</Label>
-                <Textarea
-                  value={newAccount.description}
-                  onChange={(e) => setNewAccount({ ...newAccount, description: e.target.value })}
-                  placeholder="Descrição da conta"
                 />
               </div>
               <Button onClick={createAccount} disabled={isLoading} className="w-full">
@@ -285,13 +237,13 @@ export const FinancialManagement = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-green-500" />
-              A Receber
+              <TrendingUp className="h-4 w-4 text-blue-500" />
+              Saldo Total
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              R$ {totalReceivable.toFixed(2)}
+            <div className="text-2xl font-bold text-blue-600">
+              R$ {totalBalance.toFixed(2)}
             </div>
           </CardContent>
         </Card>
@@ -299,13 +251,13 @@ export const FinancialManagement = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-500" />
-              A Pagar
+              <CreditCard className="h-4 w-4 text-green-500" />
+              Contas Correntes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              R$ {totalPayable.toFixed(2)}
+            <div className="text-2xl font-bold text-green-600">
+              {checkingAccounts.length}
             </div>
           </CardContent>
         </Card>
@@ -348,56 +300,39 @@ export const FinancialManagement = () => {
         <TabsContent value="accounts">
           <Card>
             <CardHeader>
-              <CardTitle>Contas</CardTitle>
-              <CardDescription>Gerencie suas contas a pagar e receber</CardDescription>
+              <CardTitle>Contas Bancárias</CardTitle>
+              <CardDescription>Gerencie suas contas bancárias</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Título</TableHead>
+                    <TableHead>Nome</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead>Saldo</TableHead>
+                    <TableHead>Data de Criação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {accounts.map((account) => (
                     <TableRow key={account.id}>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{account.title}</div>
-                          {account.description && (
-                            <div className="text-sm text-muted-foreground">{account.description}</div>
-                          )}
-                        </div>
+                        <div className="font-medium">{account.name}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={account.type === 'receivable' ? 'default' : 'secondary'}>
-                          {account.type === 'receivable' ? 'A Receber' : 'A Pagar'}
+                        <Badge variant="default">
+                          {account.type === 'checking' ? 'Conta Corrente' : 
+                           account.type === 'savings' ? 'Poupança' : 'Investimento'}
                         </Badge>
                       </TableCell>
-                      <TableCell className={account.type === 'receivable' ? 'text-green-600' : 'text-red-600'}>
-                        R$ {account.amount.toFixed(2)}
+                      <TableCell className={account.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        R$ {account.balance.toFixed(2)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                          {format(new Date(account.due_date), 'dd/MM/yyyy')}
+                          {format(new Date(account.created_at), 'dd/MM/yyyy')}
                         </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(account.status)}</TableCell>
-                      <TableCell>
-                        {account.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            onClick={() => markAsPaid(account.id)}
-                          >
-                            Marcar como Pago
-                          </Button>
-                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -427,7 +362,7 @@ export const FinancialManagement = () => {
                 <TableBody>
                   {cashFlow.map((flow) => (
                     <TableRow key={flow.id}>
-                      <TableCell>{format(new Date(flow.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>{format(new Date(flow.created_at), 'dd/MM/yyyy')}</TableCell>
                       <TableCell>{flow.description}</TableCell>
                       <TableCell>{flow.category}</TableCell>
                       <TableCell>

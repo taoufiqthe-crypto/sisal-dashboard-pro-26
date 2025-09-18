@@ -292,7 +292,7 @@ export const DynamicReports = () => {
             <DatePickerWithRange
               value={filters.dateRange}
               onChange={(dateRange) => 
-                dateRange && setFilters(prev => ({ ...prev, dateRange }))
+                dateRange && dateRange.to && setFilters(prev => ({ ...prev, dateRange: { from: dateRange.from!, to: dateRange.to! } }))
               }
             />
             

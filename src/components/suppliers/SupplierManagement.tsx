@@ -19,14 +19,12 @@ import { ptBR } from 'date-fns/locale';
 interface Supplier {
   id: string;
   name: string;
-  company_name: string;
-  cnpj: string;
-  email: string;
-  phone: string;
-  address: string;
-  contact_person: string;
-  notes: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
   created_at: string;
+  updated_at: string;
+  user_id: string;
 }
 
 interface SupplierPurchase {
@@ -65,13 +63,9 @@ export function SupplierManagement() {
   
   const [newSupplier, setNewSupplier] = useState({
     name: '',
-    company_name: '',
-    cnpj: '',
     email: '',
     phone: '',
-    address: '',
-    contact_person: '',
-    notes: ''
+    address: ''
   });
 
   const [newPurchase, setNewPurchase] = useState({
@@ -258,13 +252,9 @@ export function SupplierManagement() {
   const resetSupplierForm = () => {
     setNewSupplier({
       name: '',
-      company_name: '',
-      cnpj: '',
       email: '',
       phone: '',
-      address: '',
-      contact_person: '',
-      notes: ''
+      address: ''
     });
     setEditingSupplier(null);
   };
@@ -366,73 +356,35 @@ export function SupplierManagement() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="company_name">Empresa</Label>
-                      <Input
-                        id="company_name"
-                        value={newSupplier.company_name}
-                        onChange={(e) => setNewSupplier({...newSupplier, company_name: e.target.value})}
-                        placeholder="Nome da empresa"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="cnpj">CNPJ</Label>
-                      <Input
-                        id="cnpj"
-                        value={newSupplier.cnpj}
-                        onChange={(e) => setNewSupplier({...newSupplier, cnpj: e.target.value})}
-                        placeholder="00.000.000/0000-00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="contact_person">Pessoa de Contato</Label>
-                      <Input
-                        id="contact_person"
-                        value={newSupplier.contact_person}
-                        onChange={(e) => setNewSupplier({...newSupplier, contact_person: e.target.value})}
-                        placeholder="Nome do contato"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
                       <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
-                        value={newSupplier.email}
+                        value={newSupplier.email || ''}
                         onChange={(e) => setNewSupplier({...newSupplier, email: e.target.value})}
                         placeholder="email@exemplo.com"
                       />
                     </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="phone">Telefone</Label>
                       <Input
                         id="phone"
-                        value={newSupplier.phone}
+                        value={newSupplier.phone || ''}
                         onChange={(e) => setNewSupplier({...newSupplier, phone: e.target.value})}
                         placeholder="(00) 00000-0000"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="address">Endereço</Label>
-                    <Input
-                      id="address"
-                      value={newSupplier.address}
-                      onChange={(e) => setNewSupplier({...newSupplier, address: e.target.value})}
-                      placeholder="Endereço completo"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="notes">Observações</Label>
-                    <Textarea
-                      id="notes"
-                      value={newSupplier.notes}
-                      onChange={(e) => setNewSupplier({...newSupplier, notes: e.target.value})}
-                      placeholder="Observações sobre o fornecedor"
-                    />
+                    <div>
+                      <Label htmlFor="address">Endereço</Label>
+                      <Input
+                        id="address"
+                        value={newSupplier.address || ''}
+                        onChange={(e) => setNewSupplier({...newSupplier, address: e.target.value})}
+                        placeholder="Endereço completo"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
@@ -452,22 +404,20 @@ export function SupplierManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Telefone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Ações</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Endereço</TableHead>
+                  <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {suppliers.map((supplier) => (
                     <TableRow key={supplier.id}>
                       <TableCell className="font-medium">{supplier.name}</TableCell>
-                      <TableCell>{supplier.company_name || '-'}</TableCell>
-                      <TableCell>{supplier.contact_person || '-'}</TableCell>
-                      <TableCell>{supplier.phone || '-'}</TableCell>
                       <TableCell>{supplier.email || '-'}</TableCell>
+                      <TableCell>{supplier.phone || '-'}</TableCell>
+                      <TableCell>{supplier.address || '-'}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button

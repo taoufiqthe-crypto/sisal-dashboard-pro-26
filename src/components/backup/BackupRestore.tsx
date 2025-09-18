@@ -200,7 +200,7 @@ export const BackupRestore = () => {
 
       for (const step of importSteps) {
         if (step.data?.length > 0) {
-          const result = await supabase.from(step.name).upsert(
+          const result = await supabase.from(step.name as any).upsert(
             step.data.map((item: any) => ({ ...item, user_id: user.id }))
           );
           
