@@ -1,0 +1,342 @@
+// src/components/sales/NewSale.tsx
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+import { Product, Sale, SaleItem, Customer, paymentMethods } from "./types";
+
+interface NewSaleProps {
+  products: Product[];
+  customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
+  onSaleCreated: (sale: Sale) => void;
+  onClose: () => void;
+}
+
+export function NewSale({
+  products,
+  customers,
+  setCustomers,
+  onSaleCreated,
+  onClose,
+}: NewSaleProps) {
+  // carrinho
+  const [selectedProducts, setSelectedProducts] = useState<SaleItem[]>([]);
+  const [currentProductId, setCurrentProductId] = useState<number | "">("");
+  const [currentQuantity, setCurrentQuantity] = useState("");
+
+  // cliente inline
+  const [customerSelection, setCustomerSelection] = useState<string | number>("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState<Customer["email"]>("");
+
+  // venda / pagamento
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    "dinheiro" | "pix" | "credito" | "debito"
+  >("dinheiro");
+  const [amountPaid, setAmountPaid] = useState("");
+
+  const formatCurrency = (value: number) => `R$ ${value.toFixed(2)}`;
+
+  // --- produto ---
+  const addProductToSale = () => {
+    if (!currentProductId || !currentQuantity) return;
+    const prod = products.find((p) => p.id === Number(currentProductId));
+    if (!prod) return;
+    const qty = parseInt(currentQuantity, 10);
+    if (!qty || qty <= 0) {
+      toast.error("Quantidade inválida");
+      return;
+    }
+    const item: SaleItem = {
+      productId: prod.id,
+      productName: prod.name,
+      quantity: qty,
+      price: prod.price,
+    };
+    setSelectedProducts((prev) => [...prev, item]);
+    setCurrentProductId("");
+    setCurrentQuantity("");
+  };
+
+  const removeProductFromSale = (index: number) => {
+    setSelectedProducts((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const calculateTotal = () =>
+    selectedProducts.reduce((sum, item) => sum + item.quantity * item.price, 0);
+
+  const calculateProfit = () =>
+    selectedProducts.reduce((sum, item) => {
+      const productData = products.find((p) => p.id === item.productId);
+      return productData ? sum + item.quantity * (item.price - productData.cost) : sum;
+    }, 0);
+
+  const calculateChange = () => {
+    const total = calculateTotal();
+    const paid = parseFloat(amountPaid) || 0;
+    return selectedPaymentMethod === "dinheiro" ? Math.max(0, paid - total) : 0;
+  };
+
+  // cliente existente → preenche inputs
+  const handleCustomerSelect = (value: string) => {
+    if (value === "new") {
+      setCustomerSelection("new");
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerEmail("");
+      return;
+    }
+    const id = Number(value);
+    const c = customers.find((x) => x.id === id);
+    if (c) {
+      setCustomerSelection(id);
+      setCustomerName(c.name || "");
+      setCustomerPhone(c.phone || "");
+      setCustomerEmail(c.email || "");
+    }
+  };
+
+  const finalizeSale = () => {
+    if (selectedProducts.length === 0) {
+      toast.error("⚠️ Adicione pelo menos um produto antes de finalizar");
+      return;
+    }
+    if (!customerName.trim()) {
+      toast.error("⚠️ Preencha o nome do cliente");
+      return;
+    }
+
+    let finalCustomer: Customer;
+    if (customerSelection !== "new" && customerSelection !== "") {
+      const id = Number(customerSelection);
+      const existing = customers.find((c) => c.id === id);
+      if (existing) {
+        finalCustomer = { ...existing, name: customerName, phone: customerPhone, email: customerEmail };
+        setCustomers((prev) => prev.map((c) => (c.id === id ? finalCustomer : c)));
+      } else {
+        finalCustomer = { id: Date.now(), name: customerName, phone: customerPhone, email: customerEmail };
+        setCustomers((prev) => [...prev, finalCustomer]);
+      }
+    } else {
+      finalCustomer = { id: Date.now(), name: customerName, phone: customerPhone, email: customerEmail };
+      setCustomers((prev) => [...prev, finalCustomer]);
+    }
+
+    const total = calculateTotal();
+    const profit = calculateProfit();
+    const paid = parseFloat(amountPaid) || total;
+    const finalAmountPaid = ["pix", "credito", "debito"].includes(selectedPaymentMethod) ? total : paid;
+
+    const newSale: Sale = {
+      id: Date.now(),
+      date: saleDate,
+      products: selectedProducts.map((item) => ({
+        name: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      total,
+      profit,
+      paymentMethod: selectedPaymentMethod,
+      amountPaid: finalAmountPaid,
+      change: calculateChange(),
+      status: "pago",
+      customer: finalCustomer,
+    };
+
+    onSaleCreated(newSale);
+    toast.success("✅ Venda registrada com sucesso!");
+    onClose();
+  };
+
+  return (
+    <div className="max-h-[80vh] overflow-y-auto p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Coluna esquerda: Data + Cliente + Produtos */}
+        <div className="space-y-4">
+          {/* Data */}
+          <div className="space-y-2">
+            <Label htmlFor="saleDate">Data da Venda</Label>
+            <Input
+              id="saleDate"
+              type="date"
+              value={saleDate}
+              onChange={(e) => setSaleDate(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
+            />
+          </div>
+
+          {/* Cliente */}
+          <div className="border rounded-lg p-4 space-y-2">
+            <h3 className="font-semibold">Cliente</h3>
+            <select
+              className="w-full rounded-lg border border-gray-700 bg-black text-white p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+              value={String(customerSelection || "")}
+              onChange={(e) => handleCustomerSelect(e.target.value)}
+            >
+              <option value="">-- Selecione um cliente --</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.phone ? `(${c.phone})` : ""}
+                </option>
+              ))}
+              <option value="new">+ Novo cliente</option>
+            </select>
+
+            <Input
+              placeholder="Nome do cliente"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+            />
+            <Input
+              placeholder="Telefone"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+            />
+            <Input
+              placeholder="Email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+            />
+          </div>
+
+          {/* Produto */}
+          <div className="border rounded-lg p-4 space-y-2">
+            <h3 className="font-semibold">Produtos</h3>
+            <div className="flex space-x-2">
+              <div className="flex-1">
+                <select
+                  className="w-full rounded-lg border border-gray-700 bg-black text-white p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={String(currentProductId || "")}
+                  onChange={(e) =>
+                    setCurrentProductId(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                >
+                  <option value="">Selecione um produto</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {formatCurrency(p.price)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-24">
+                <Input
+                  type="number"
+                  placeholder="Qtd"
+                  value={currentQuantity}
+                  onChange={(e) => setCurrentQuantity(e.target.value)}
+                />
+              </div>
+              <Button onClick={addProductToSale} disabled={!currentProductId || !currentQuantity}>
+                Adicionar
+              </Button>
+            </div>
+
+            {/* Lista de produtos */}
+            {selectedProducts.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {selectedProducts.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-muted rounded"
+                  >
+                    <div>
+                      <p className="font-medium">{item.productName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.quantity} x {formatCurrency(item.price)}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <p className="font-semibold">
+                        {formatCurrency(item.quantity * item.price)}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeProductFromSale(index)}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Coluna direita: Totais + Pagamento + Botões */}
+        <div className="space-y-4">
+          {/* Totais */}
+          <div className="border rounded-lg p-4 space-y-2">
+            <h3 className="font-semibold">Resumo</h3>
+            <div className="flex justify-between">
+              <span className="font-semibold">Total:</span>
+              <span className="font-bold text-revenue">{formatCurrency(calculateTotal())}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-semibold">Lucro:</span>
+              <span className="font-bold text-profit">{formatCurrency(calculateProfit())}</span>
+            </div>
+          </div>
+
+          {/* Pagamento */}
+          <div className="border rounded-lg p-4 space-y-4">
+            <h3 className="font-semibold">Forma de Pagamento</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {paymentMethods.map((method) => (
+                <Button
+                  key={method.type}
+                  variant={selectedPaymentMethod === method.type ? "default" : "outline"}
+                  className="flex items-center space-x-2 justify-start p-4 h-auto"
+                  onClick={() => setSelectedPaymentMethod(method.type)}
+                >
+                  <span className="text-lg">{method.icon}</span>
+                  <span>{method.label}</span>
+                </Button>
+              ))}
+            </div>
+
+            {selectedPaymentMethod === "dinheiro" && (
+              <div className="space-y-2">
+                <Label htmlFor="amountPaid">Valor Pago</Label>
+                <Input
+                  id="amountPaid"
+                  type="number"
+                  step="0.01"
+                  value={amountPaid}
+                  onChange={(e) => setAmountPaid(e.target.value)}
+                  placeholder={formatCurrency(calculateTotal())}
+                />
+                {amountPaid && parseFloat(amountPaid) >= calculateTotal() && (
+                  <p className="text-success font-semibold">
+                    Troco: {formatCurrency(calculateChange())}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Ações */}
+          <div className="flex justify-end space-x-2 pt-2 border-t">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={finalizeSale}
+              disabled={selectedProducts.length === 0 || !customerName.trim()}
+            >
+              Finalizar Venda
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
