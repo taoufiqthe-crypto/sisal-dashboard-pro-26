@@ -56,7 +56,7 @@ const Index = () => {
   // Clientes
   const [customers, setCustomers] = useState<Customer[]>(loadCustomersFromLocalStorage);
 
-  // Dados globais do sistema - MOVIDO PARA ANTES DOS RETURNS CONDICIONAIS
+  // Dados globais do sistema
   const [sales, setSales] = useState<any[]>(() => {
     try {
       const storedSales = localStorage.getItem("sales");
@@ -77,18 +77,6 @@ const Index = () => {
     }
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
   // Persistência - usando useCallback para evitar loops infinitos
   const saveToLocalStorage = useCallback((key: string, data: any) => {
     try {
@@ -98,41 +86,13 @@ const Index = () => {
     }
   }, []);
 
-  useEffect(() => {
-    saveToLocalStorage("products", products);
-  }, [products, saveToLocalStorage]);
-
-  useEffect(() => {
-    saveToLocalStorage("customers", customers);
-  }, [customers, saveToLocalStorage]);
-
-  useEffect(() => {
-    saveToLocalStorage("sales", sales);
-  }, [sales, saveToLocalStorage]);
-
-  useEffect(() => {
-    saveToLocalStorage("productions", productions);
-  }, [productions, saveToLocalStorage]);
-
   // Handlers
-  const handleProductAdded = (newProduct: Product) => {
+  const handleProductAdded = useCallback((newProduct: Product) => {
     const newId =
       products.length > 0 ? Math.max(...products.map((p) => p.id)) + 1 : 1;
     const productWithId = { ...newProduct, id: newId };
     setProducts((prevProducts) => [...prevProducts, productWithId]);
-  };
-
-  // Função para limpar todos os dados do sistema
-  const clearAllData = () => {
-    if (window.confirm("⚠️ ATENÇÃO! Esta ação irá apagar TODOS os dados do sistema (produtos, vendas, clientes, estoque, produção). Esta ação NÃO pode ser desfeita. Tem certeza?")) {
-      localStorage.clear();
-      setProducts([]);
-      setCustomers([]);
-      setSales([]);
-      setProductions([]);
-      alert("✅ Todos os dados foram limpos! Sistema pronto para seus dados reais.");
-    }
-  };
+  }, [products]);
 
   const handleSaleCreated = useCallback((newSale: any) => {
     console.log("Venda criada:", newSale);
@@ -187,6 +147,46 @@ const Index = () => {
       console.log(`Produção transferida para estoque: ${production.quantity} unidades de ${production.pieceName}`);
     }
   }, [products]);
+
+  // Função para limpar todos os dados do sistema
+  const clearAllData = useCallback(() => {
+    if (window.confirm("⚠️ ATENÇÃO! Esta ação irá apagar TODOS os dados do sistema (produtos, vendas, clientes, estoque, produção). Esta ação NÃO pode ser desfeita. Tem certeza?")) {
+      localStorage.clear();
+      setProducts([]);
+      setCustomers([]);
+      setSales([]);
+      setProductions([]);
+      alert("✅ Todos os dados foram limpos! Sistema pronto para seus dados reais.");
+    }
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  useEffect(() => {
+    saveToLocalStorage("products", products);
+  }, [products, saveToLocalStorage]);
+
+  useEffect(() => {
+    saveToLocalStorage("customers", customers);
+  }, [customers, saveToLocalStorage]);
+
+  useEffect(() => {
+    saveToLocalStorage("sales", sales);
+  }, [sales, saveToLocalStorage]);
+
+  useEffect(() => {
+    saveToLocalStorage("productions", productions);
+  }, [productions, saveToLocalStorage]);
 
   // Renderização
   const renderContent = () => {
