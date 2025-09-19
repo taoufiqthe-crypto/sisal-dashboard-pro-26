@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useStockManagement } from "@/hooks/useStockManagement";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Monitor, BarChart3 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -66,25 +67,39 @@ export function SalesManagement({
     return d.getFullYear() === now.getFullYear();
   };
 
-  const handleSaleCreated = (newSale: Sale) => {
-    // Validar estoque antes de finalizar venda
-    if (newSale.cart && setProducts) {
-      const stockValid = validateStock(products, newSale.cart);
-      if (!stockValid) {
-        return; // Não finaliza a venda se estoque inválido
+  const handleSaleCreated = async (newSale: Sale) => {
+    try {
+      // Validar estoque antes de finalizar venda
+      if (newSale.cart && setProducts) {
+        const stockValid = validateStock(products, newSale.cart);
+        if (!stockValid) {
+          return; // Não finaliza a venda se estoque inválido
+        }
       }
-    }
 
-    setSales([newSale, ...sales]);
-    
-    // Atualizar estoque automaticamente usando o hook
-    if (setProducts && newSale.cart) {
-      updateProductStock(products, setProducts, newSale.cart);
-    }
-    
-    // Chamar callback se fornecido
-    if (onSaleCreated) {
-      onSaleCreated(newSale);
+      setSales([newSale, ...sales]);
+      
+      // Salvar também no localStorage para compatibilidade com relatórios
+      const storedSales = JSON.parse(localStorage.getItem('sales') || '[]');
+      storedSales.unshift(newSale);
+      localStorage.setItem('sales', JSON.stringify(storedSales));
+      
+      // Atualizar estoque automaticamente usando o hook
+      if (setProducts && newSale.cart) {
+        updateProductStock(products, setProducts, newSale.cart);
+      }
+      
+      // Chamar callback se fornecido
+      if (onSaleCreated) {
+        onSaleCreated(newSale);
+      }
+      
+      toast.success("Venda registrada com sucesso!", {
+        description: `Total: R$ ${newSale.total.toFixed(2)}`
+      });
+    } catch (error) {
+      console.error('Erro ao processar venda:', error);
+      toast.error("Erro ao processar venda");
     }
   };
 

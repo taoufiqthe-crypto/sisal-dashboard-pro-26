@@ -497,42 +497,73 @@ export function ProfessionalBudget({ products, onBudgetCreated }: ProfessionalBu
     printWindow.close();
   };
 
-  const saveBudget = () => {
-    if (!customerData.name || !customerData.document || budgetItems.length === 0) {
-      toast.error("Preencha os dados do cliente e adicione pelo menos um produto");
+  const saveBudget = async () => {
+    // Validações melhoradas
+    if (!customerData.name.trim()) {
+      toast.error("Nome do cliente é obrigatório");
       return;
     }
 
-    const budget: Budget = {
-      id: Date.now(),
-      date: getCurrentDate(),
-      budgetNumber: generateBudgetNumber(),
-      deliveryDate,
-      products: budgetItems.map(item => ({
-        name: item.name,
-        quantity: item.quantity,
-        unit: item.unit,
-        price: item.price,
-        subtotal: item.quantity * item.price
-      })),
-      subtotal: calculateSubtotal(),
-      discount: 0,
-      total: calculateTotal(),
-      customer: customerData,
-      company: companyData,
-      paymentMethod,
-      observations,
-      status: 'orcamento',
-      validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    };
-
-    if (onBudgetCreated) {
-      onBudgetCreated(budget);
+    if (!customerData.document.trim()) {
+      toast.error("CPF/CNPJ do cliente é obrigatório");
+      return;
     }
 
-    toast.success("Orçamento salvo com sucesso!");
-    setIsDialogOpen(false);
-    resetForm();
+    if (budgetItems.length === 0) {
+      toast.error("Adicione pelo menos um produto ao orçamento");
+      return;
+    }
+
+    // Validar se todos os itens têm nome e preço
+    const invalidItems = budgetItems.filter(item => !item.name.trim() || item.price <= 0);
+    if (invalidItems.length > 0) {
+      toast.error("Todos os produtos devem ter nome e preço válidos");
+      return;
+    }
+
+    try {
+      const budget: Budget = {
+        id: Date.now(),
+        date: getCurrentDate(),
+        budgetNumber: generateBudgetNumber(),
+        deliveryDate,
+        products: budgetItems.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          price: item.price,
+          subtotal: item.quantity * item.price
+        })),
+        subtotal: calculateSubtotal(),
+        discount: 0,
+        total: calculateTotal(),
+        customer: customerData,
+        company: companyData,
+        paymentMethod,
+        observations,
+        status: 'orcamento',
+        validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+
+      // Salvar no localStorage para compatibilidade
+      const storedBudgets = JSON.parse(localStorage.getItem('budgets') || '[]');
+      storedBudgets.unshift(budget);
+      localStorage.setItem('budgets', JSON.stringify(storedBudgets));
+
+      if (onBudgetCreated) {
+        onBudgetCreated(budget);
+      }
+
+      toast.success("Orçamento salvo com sucesso!", {
+        description: `Orçamento #${budget.budgetNumber} criado para ${customerData.name}`
+      });
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Erro ao salvar orçamento:', error);
+      toast.error("Erro ao salvar orçamento. Tente novamente.");
+    }
   };
 
   const resetForm = () => {

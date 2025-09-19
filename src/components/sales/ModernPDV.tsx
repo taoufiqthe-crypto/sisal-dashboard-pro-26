@@ -242,7 +242,25 @@ export function ModernPDV({
   }, [cart.length, paymentMethod, amountPaid, calculateTotal]);
 
   const finalizeSale = useCallback(async () => {
-    if (!canFinalizeSale()) return;
+    if (!canFinalizeSale()) {
+      toast.error("Não é possível finalizar a venda. Verifique os dados.");
+      return;
+    }
+
+    // Validações adicionais
+    if (cart.length === 0) {
+      toast.error("Adicione produtos ao carrinho antes de finalizar");
+      return;
+    }
+
+    // Validar estoque antes de finalizar
+    for (const item of cart) {
+      const product = products.find(p => p.id === item.productId);
+      if (product && product.stock < item.quantity) {
+        toast.error(`Estoque insuficiente para ${product.name}. Disponível: ${product.stock}`);
+        return;
+      }
+    }
 
     setIsProcessing(true);
     
@@ -284,13 +302,16 @@ export function ModernPDV({
       setShowReceiptDialog(true);
       clearCart();
       
-      toast.success("Venda finalizada com sucesso!");
+      toast.success("Venda finalizada com sucesso!", {
+        description: `Total: ${formatCurrency(total)} - ${paymentMethod.toUpperCase()}`
+      });
     } catch (error) {
-      toast.error("Erro ao processar venda");
+      console.error('Erro ao processar venda:', error);
+      toast.error("Erro ao processar venda. Tente novamente.");
     } finally {
       setIsProcessing(false);
     }
-  }, [canFinalizeSale, calculateTotal, cart, products, paymentMethod, amountPaid, calculateChange, selectedCustomer, onSaleCreated, clearCart]);
+  }, [canFinalizeSale, calculateTotal, cart, products, paymentMethod, amountPaid, calculateChange, selectedCustomer, onSaleCreated, clearCart, saleDate, formatCurrency]);
 
   const getPaymentIcon = (method: string) => {
     switch (method) {
