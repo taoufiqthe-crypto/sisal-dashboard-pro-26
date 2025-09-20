@@ -1,8 +1,9 @@
 // src/components/sales/SalesManagement.tsx
 import { useState } from "react";
 import { useStockManagement } from "@/hooks/useStockManagement";
+import { useSalesData } from "@/hooks/useSalesData";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Monitor, BarChart3 } from "lucide-react";
+import { PlusCircle, Monitor, BarChart3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -25,7 +26,6 @@ import {
   Sale,
   Product,
   paymentMethods,
-  mockSales,
   Customer,
 } from "./types";
 
@@ -44,7 +44,7 @@ export function SalesManagement({
   setCustomers,
   onSaleCreated,
 }: SalesManagementProps) {
-  const [sales, setSales] = useState<Sale[]>(mockSales);
+  const { sales, loading, createSale, deleteSale } = useSalesData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { updateProductStock, validateStock } = useStockManagement();
 
@@ -77,14 +77,22 @@ export function SalesManagement({
         }
       }
 
-      setSales([newSale, ...sales]);
+      // Criar venda no Supabase
+      await createSale({
+        cart: newSale.cart || [],
+        total: newSale.total,
+        paymentMethod: newSale.paymentMethod,
+        customerId: newSale.customer?.id !== 0 ? newSale.customer?.id : undefined,
+        discount: newSale.discount,
+        date: new Date(newSale.date)
+      });
       
       // Salvar também no localStorage para compatibilidade com relatórios
       const storedSales = JSON.parse(localStorage.getItem('sales') || '[]');
       storedSales.unshift(newSale);
       localStorage.setItem('sales', JSON.stringify(storedSales));
       
-      // Atualizar estoque automaticamente usando o hook
+      // Atualizar estoque automaticamente usando o hook (para compatibilidade)
       if (setProducts && newSale.cart) {
         updateProductStock(products, setProducts, newSale.cart);
       }
@@ -94,14 +102,20 @@ export function SalesManagement({
         onSaleCreated(newSale);
       }
       
-      toast.success("Venda registrada com sucesso!", {
-        description: `Total: R$ ${newSale.total.toFixed(2)}`
-      });
     } catch (error) {
       console.error('Erro ao processar venda:', error);
       toast.error("Erro ao processar venda");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Carregando vendas...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -190,9 +204,7 @@ export function SalesManagement({
           <SalesHistory 
             sales={sales} 
             formatCurrency={formatCurrency}
-            onSaleDeleted={(saleId) => {
-              setSales(prevSales => prevSales.filter(sale => sale.id !== saleId));
-            }}
+            onSaleDeleted={deleteSale}
           />
         </TabsContent>
       </Tabs>

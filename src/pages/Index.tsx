@@ -46,36 +46,35 @@ const loadCustomersFromLocalStorage = (): Customer[] => {
   }
 };
 
+// Initialize data outside of useState to avoid hook violations
+const getInitialSales = (): any[] => {
+  try {
+    const storedSales = localStorage.getItem("sales");
+    return storedSales ? JSON.parse(storedSales) : [];
+  } catch (error) {
+    console.error("Failed to load sales from localStorage", error);
+    return [];
+  }
+};
+
+const getInitialProductions = (): any[] => {
+  try {
+    const storedProductions = localStorage.getItem("productions");
+    return storedProductions ? JSON.parse(storedProductions) : [];
+  } catch (error) {
+    console.error("Failed to load productions from localStorage", error);
+    return [];
+  }
+};
+
 const Index = () => {
+  // All hooks must be called before any conditional returns
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
-
-  // Produtos
   const [products, setProducts] = useState<Product[]>(loadProductsFromLocalStorage);
-
-  // Clientes
   const [customers, setCustomers] = useState<Customer[]>(loadCustomersFromLocalStorage);
-
-  // Dados globais do sistema
-  const [sales, setSales] = useState<any[]>(() => {
-    try {
-      const storedSales = localStorage.getItem("sales");
-      return storedSales ? JSON.parse(storedSales) : [];
-    } catch (error) {
-      console.error("Failed to load sales from localStorage", error);
-      return [];
-    }
-  });
-
-  const [productions, setProductions] = useState<any[]>(() => {
-    try {
-      const storedProductions = localStorage.getItem("productions");
-      return storedProductions ? JSON.parse(storedProductions) : [];
-    } catch (error) {
-      console.error("Failed to load productions from localStorage", error);
-      return [];
-    }
-  });
+  const [sales, setSales] = useState<any[]>(getInitialSales);
+  const [productions, setProductions] = useState<any[]>(getInitialProductions);
 
   // Persistência - usando useCallback para evitar loops infinitos
   const saveToLocalStorage = useCallback((key: string, data: any) => {
@@ -160,18 +159,7 @@ const Index = () => {
     }
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
+  // Effects for persistence
   useEffect(() => {
     saveToLocalStorage("products", products);
   }, [products, saveToLocalStorage]);
@@ -187,6 +175,19 @@ const Index = () => {
   useEffect(() => {
     saveToLocalStorage("productions", productions);
   }, [productions, saveToLocalStorage]);
+
+  // Loading and auth checks after all hooks
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   // Renderização
   const renderContent = () => {
