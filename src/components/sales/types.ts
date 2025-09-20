@@ -43,11 +43,12 @@ export interface Sale {
   cart?: SaleItem[]; // Adicionado para facilitar atualização do estoque
   total: number;
   profit: number;
-  paymentMethod: "dinheiro" | "pix" | "credito" | "debito";
+  paymentMethod: string; // Changed to string for flexibility
   amountPaid: number;
   change: number;
-  status: "pago" | "pendente";
+  status: "pago" | "pendente" | "completed";
   customer: Customer;
+  discount?: number; // Added discount field
 }
 
 export interface Budget {

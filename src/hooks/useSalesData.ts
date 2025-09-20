@@ -42,7 +42,7 @@ export function useSalesData() {
         })),
         total: parseFloat(sale.total.toString()),
         profit: 0, // Calcular se necessário
-        paymentMethod: sale.payment_method,
+        paymentMethod: sale.payment_method as string,
         customer: sale.customers ? {
           id: parseInt(sale.customers.id),
           name: sale.customers.name,
@@ -125,17 +125,30 @@ export function useSalesData() {
 
       if (itemsError) throw itemsError;
 
-      // Atualizar estoque dos produtos usando RPC function
+      // Atualizar estoque dos produtos manualmente
       for (const item of saleData.cart) {
-        const { error: stockError } = await supabase.rpc('update_product_stock', {
-          product_id: item.productId.toString(),
-          quantity_sold: item.quantity,
-          user_id: user.id
-        });
+        const { data: product, error: fetchError } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.productId.toString())
+          .eq('user_id', user.id)
+          .single();
+
+        if (fetchError || !product) {
+          console.error('Erro ao buscar produto para atualizar estoque:', fetchError);
+          continue;
+        }
+
+        const newStock = Math.max(0, product.stock - item.quantity);
+        
+        const { error: stockError } = await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', item.productId.toString())
+          .eq('user_id', user.id);
 
         if (stockError) {
           console.error('Erro ao atualizar estoque:', stockError);
-          // Continue even if stock update fails
         }
       }
 
@@ -170,13 +183,27 @@ export function useSalesData() {
 
       if (itemsError) throw itemsError;
 
-      // Restaurar estoque usando RPC function
+      // Restaurar estoque manualmente
       for (const item of saleItems || []) {
-        const { error: stockError } = await supabase.rpc('restore_product_stock', {
-          product_id: item.product_id,
-          quantity_restored: item.quantity,
-          user_id: user.id
-        });
+        const { data: product, error: fetchError } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.product_id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (fetchError || !product) {
+          console.error('Erro ao buscar produto para restaurar estoque:', fetchError);
+          continue;
+        }
+
+        const newStock = product.stock + item.quantity;
+        
+        const { error: stockError } = await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', item.product_id)
+          .eq('user_id', user.id);
 
         if (stockError) {
           console.error('Erro ao restaurar estoque:', stockError);
