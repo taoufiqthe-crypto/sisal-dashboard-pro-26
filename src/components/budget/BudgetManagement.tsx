@@ -24,6 +24,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { PlusCircle, FileText, Printer, ShoppingCart, Download, Edit, Settings, Calculator } from "lucide-react";
 import { ProfessionalBudget } from "./ProfessionalBudget";
+import { BudgetList } from "./BudgetList";
 
 interface Product {
   id: number;
@@ -86,12 +87,16 @@ interface BudgetManagementProps {
 export function BudgetManagement({ products, onSaleCreated }: BudgetManagementProps) {
   return (
     <Tabs defaultValue="professional" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="professional">Orçamento Profissional</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="professional">Novo Orçamento</TabsTrigger>
+        <TabsTrigger value="list">Orçamentos Salvos</TabsTrigger>
         <TabsTrigger value="legacy">Orçamento Simples</TabsTrigger>
       </TabsList>
       <TabsContent value="professional">
         <ProfessionalBudget products={products} onBudgetCreated={onSaleCreated} />
+      </TabsContent>
+      <TabsContent value="list">
+        <BudgetList />
       </TabsContent>
       <TabsContent value="legacy">
         <LegacyBudgetManagement products={products} onSaleCreated={onSaleCreated} />

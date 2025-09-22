@@ -19,6 +19,8 @@ import { BackupRestore } from "@/components/backup/BackupRestore";
 import { FinancialManagement } from "@/components/financial/FinancialManagement";
 import { AdvancedStockManagement } from "@/components/advanced-stock/AdvancedStockManagement";
 import { ExpensesManagement } from "@/components/expenses/ExpensesManagement";
+import { OfflineIndicator } from "@/components/system/OfflineIndicator";
+import { PerformanceMonitor } from "@/components/system/PerformanceMonitor";
 
 // ✅ importamos os mocks e tipos
 import { mockProducts, Product, mockCustomers, Customer } from "@/components/sales";
@@ -147,6 +149,32 @@ const Index = () => {
     }
   }, [products]);
 
+  // Função para lidar com ações rápidas do dashboard
+  const handleQuickAction = useCallback((action: string) => {
+    switch (action) {
+      case 'new-sale':
+        setActiveTab('sales');
+        break;
+      case 'add-product':
+        setActiveTab('products');
+        break;
+      case 'add-customer':
+        setActiveTab('customers');
+        break;
+      case 'new-budget':
+        setActiveTab('budget');
+        break;
+      case 'view-reports':
+        setActiveTab('reports');
+        break;
+      case 'stock-entry':
+        setActiveTab('stock');
+        break;
+      default:
+        console.log('Ação não reconhecida:', action);
+    }
+  }, []);
+
   // Função para limpar todos os dados do sistema
   const clearAllData = useCallback(() => {
     if (window.confirm("⚠️ ATENÇÃO! Esta ação irá apagar TODOS os dados do sistema (produtos, vendas, clientes, estoque, produção). Esta ação NÃO pode ser desfeita. Tem certeza?")) {
@@ -193,7 +221,7 @@ const Index = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard products={products} sales={sales} onClearAllData={clearAllData} />;
+        return <Dashboard products={products} sales={sales} onClearAllData={clearAllData} onAction={handleQuickAction} />;
       case "products":
         return (
           <ProductManagement
@@ -267,6 +295,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      <OfflineIndicator />
+      <PerformanceMonitor />
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="flex-1 ml-64 transition-all duration-300">
         <div className="container mx-auto px-4 py-6">{renderContent()}</div>

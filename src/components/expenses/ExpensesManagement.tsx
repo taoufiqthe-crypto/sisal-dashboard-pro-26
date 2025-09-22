@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,14 +99,9 @@ const paymentMethods = [
 ];
 
 export function ExpensesManagement() {
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    try {
-      const stored = localStorage.getItem("expenses");
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const { user } = useAuth();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -121,8 +118,42 @@ export function ExpensesManagement() {
   });
 
   useEffect(() => {
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-  }, [expenses]);
+    if (user) {
+      loadExpenses();
+    }
+  }, [user]);
+
+  const loadExpenses = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('expense_date', { ascending: false });
+
+      if (error) throw error;
+
+      const transformedExpenses: Expense[] = (data || []).map(expense => ({
+        id: parseInt(expense.id),
+        date: expense.expense_date,
+        category: expense.category as ExpenseCategory,
+        description: expense.description,
+        amount: parseFloat(expense.amount.toString()),
+        paymentMethod: expense.payment_method as Expense["paymentMethod"],
+        supplier: expense.supplier_id || undefined,
+        status: expense.status as Expense["status"],
+        notes: expense.notes || undefined,
+      }));
+
+      setExpenses(transformedExpenses);
+    } catch (error) {
+      console.error('Erro ao carregar despesas:', error);
+      toast.error('Erro ao carregar despesas');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -139,35 +170,49 @@ export function ExpensesManagement() {
     setEditingExpense(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.category || !formData.description || !formData.amount) {
       toast.error("Preencha todos os campos obrigatórios!");
       return;
     }
 
-    const expenseData: Expense = {
-      id: editingExpense?.id || Date.now(),
-      date: formData.date,
-      category: formData.category,
-      description: formData.description,
-      amount: parseFloat(formData.amount),
-      paymentMethod: formData.paymentMethod,
-      supplier: formData.supplier || undefined,
-      dueDate: formData.dueDate || undefined,
-      status: formData.status,
-      notes: formData.notes || undefined,
-    };
+    try {
+      const expenseData = {
+        user_id: user!.id,
+        expense_date: formData.date,
+        category: formData.category,
+        description: formData.description,
+        amount: parseFloat(formData.amount),
+        payment_method: formData.paymentMethod,
+        supplier_id: formData.supplier || null,
+        status: formData.status,
+        notes: formData.notes || null,
+      };
 
-    if (editingExpense) {
-      setExpenses(prev => prev.map(exp => exp.id === editingExpense.id ? expenseData : exp));
-      toast.success("Despesa atualizada com sucesso!");
-    } else {
-      setExpenses(prev => [expenseData, ...prev]);
-      toast.success("Despesa cadastrada com sucesso!");
+      if (editingExpense) {
+        const { error } = await supabase
+          .from('expenses')
+          .update(expenseData)
+          .eq('id', editingExpense.id.toString());
+
+        if (error) throw error;
+        toast.success("Despesa atualizada com sucesso!");
+      } else {
+        const { error } = await supabase
+          .from('expenses')
+          .insert([expenseData]);
+
+        if (error) throw error;
+        toast.success("Despesa cadastrada com sucesso!");
+      }
+
+      resetForm();
+      setIsDialogOpen(false);
+      await loadExpenses();
+    } catch (error) {
+      console.error('Erro ao salvar despesa:', error);
+      toast.error('Erro ao salvar despesa');
     }
-
-    resetForm();
-    setIsDialogOpen(false);
   };
 
   const handleEdit = (expense: Expense) => {
@@ -186,10 +231,22 @@ export function ExpensesManagement() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir esta despesa?")) {
-      setExpenses(prev => prev.filter(exp => exp.id !== id));
-      toast.success("Despesa excluída com sucesso!");
+      try {
+        const { error } = await supabase
+          .from('expenses')
+          .delete()
+          .eq('id', id.toString());
+
+        if (error) throw error;
+        
+        toast.success("Despesa excluída com sucesso!");
+        await loadExpenses();
+      } catch (error) {
+        console.error('Erro ao excluir despesa:', error);
+        toast.error('Erro ao excluir despesa');
+      }
     }
   };
 

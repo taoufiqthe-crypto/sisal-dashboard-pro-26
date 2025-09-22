@@ -22,6 +22,7 @@ import { SalesMonth } from "./SalesMonth";
 import { SalesYear } from "./SalesYear";
 import { SalesHistory } from "./SalesHistory";
 import { SalesByPayment } from "./SalesByPayment";
+import { SalesAnalytics } from "./SalesAnalytics";
 import {
   Sale,
   Product,
@@ -141,20 +142,16 @@ export function SalesManagement({
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          {/* Cabeçalho dos Relatórios */}
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Relatórios de Vendas</h2>
-              <p className="text-muted-foreground">Acompanhe o desempenho das suas vendas</p>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <h3 className="text-2xl font-bold">Relatórios de Vendas</h3>
+            <Dialog>
               <DialogTrigger asChild>
-                <Button>
+                <Button variant="outline">
                   <PlusCircle className="w-4 h-4 mr-2" />
                   Nova Venda Manual
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Nova Venda Manual</DialogTitle>
                 </DialogHeader>
@@ -163,47 +160,18 @@ export function SalesManagement({
                   customers={customers}
                   setCustomers={setCustomers}
                   onSaleCreated={handleSaleCreated}
-                  onClose={() => setIsDialogOpen(false)}
+                  onClose={() => {}}
                 />
               </DialogContent>
             </Dialog>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <SalesToday 
-              sales={sales.filter(sale => isToday(sale.date))} 
-              paymentMethods={paymentMethods}
-              formatCurrency={formatCurrency}
-              isToday={isToday}
-            />
-            <SalesMonth 
-              sales={sales.filter(sale => isThisMonth(sale.date))} 
-              paymentMethods={paymentMethods}
-              formatCurrency={formatCurrency}
-              isThisMonth={isThisMonth}
-            />
-            <SalesYear 
-              sales={sales.filter(sale => isThisYear(sale.date))} 
-              paymentMethods={paymentMethods}
-              formatCurrency={formatCurrency}
-              isThisYear={isThisYear}
-            />
-          </div>
-
-          {/* Vendas por Forma de Pagamento - Mensal */}
-          <div className="mt-6">
-            <SalesByPayment
-              sales={sales}
-              paymentMethods={paymentMethods}
-              title="Vendas do Mês por Forma de Pagamento"
-              filterFn={isThisMonth}
-              formatCurrency={formatCurrency}
-            />
-          </div>
+          {/* Componente de Analytics Completo */}
+          <SalesAnalytics sales={sales} />
 
           <SalesHistory 
             sales={sales} 
-            formatCurrency={formatCurrency}
+            formatCurrency={(value: number) => `R$ ${value.toFixed(2)}`}
             onSaleDeleted={deleteSale}
           />
         </TabsContent>

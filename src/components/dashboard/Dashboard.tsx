@@ -1,5 +1,6 @@
 import { StatsCard } from "./StatsCard";
 import { StockAlerts } from "./StockAlerts";
+import { QuickActions } from "./QuickActions";
 import { Card } from "@/components/ui/card";
 import { 
   DollarSign, 
@@ -27,9 +28,10 @@ interface DashboardProps {
   products?: any[];
   sales?: any[];
   onClearAllData?: () => void;
+  onAction?: (action: string) => void;
 }
 
-export function Dashboard({ products = [], sales = [], onClearAllData }: DashboardProps) {
+export function Dashboard({ products = [], sales = [], onClearAllData, onAction }: DashboardProps) {
   // Calcular dados dinâmicos do sistema
   const todayStr = new Date().toISOString().split("T")[0];
   const todaySales = sales.filter(s => s.date === todayStr);
@@ -89,12 +91,12 @@ export function Dashboard({ products = [], sales = [], onClearAllData }: Dashboa
         />
       </div>
 
-      {/* Seção de vendas de hoje e produtos por categoria */}
+      {/* Seção de vendas de hoje e ações rápidas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="p-6">
           <div className="flex items-center space-x-2 mb-4">
             <ShoppingCart className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Produtos Mais Vendidos Hoje</h3>
+            <h3 className="text-lg font-semibold">Vendas de Hoje</h3>
           </div>
           <div className="space-y-3">
             {todaySales.length > 0 ? (
@@ -115,38 +117,10 @@ export function Dashboard({ products = [], sales = [], onClearAllData }: Dashboa
 
         <StockAlerts products={products} />
 
-        <Card className="p-6">
-          <div className="flex items-center space-x-2 mb-4">
-            <Package className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Vendas por Categoria</h3>
-          </div>
-          <div className="space-y-3">
-            {sales.length > 0 ? (
-              // Calcular vendas por categoria dinamicamente
-              Object.entries(
-                sales.reduce((acc: {[key: string]: {count: number, total: number}}, sale) => {
-                  sale.products?.forEach((product: any) => {
-                    const category = product.category || 'Sem Categoria';
-                    if (!acc[category]) acc[category] = {count: 0, total: 0};
-                    acc[category].count += product.quantity || 1;
-                    acc[category].total += (product.price || 0) * (product.quantity || 1);
-                  });
-                  return acc;
-                }, {})
-              ).slice(0, 4).map(([category, data]) => (
-                <div key={category} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium">{category}</p>
-                    <p className="text-sm text-muted-foreground">{(data as {count: number, total: number}).count} vendas</p>
-                  </div>
-                  <p className="font-semibold text-profit">R$ {(data as {count: number, total: number}).total.toFixed(2)}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground text-center py-4">Nenhuma venda registrada ainda</p>
-            )}
-          </div>
-        </Card>
+        {/* Ações Rápidas */}
+        {onAction && (
+          <QuickActions onAction={onAction} />
+        )}
       </div>
 
       {/* Resumo rápido de hoje */}
