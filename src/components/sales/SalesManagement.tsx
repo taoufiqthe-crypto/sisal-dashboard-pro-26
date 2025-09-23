@@ -36,6 +36,7 @@ interface SalesManagementProps {
   customers: Customer[];
   setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   onSaleCreated?: (sale: Sale) => void;
+  currentOperator?: any;
 }
 
 export function SalesManagement({
@@ -44,6 +45,7 @@ export function SalesManagement({
   customers,
   setCustomers,
   onSaleCreated,
+  currentOperator,
 }: SalesManagementProps) {
   const { sales, loading, createSale, deleteSale } = useSalesData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);

@@ -21,6 +21,10 @@ import { AdvancedStockManagement } from "@/components/advanced-stock/AdvancedSto
 import { ExpensesManagement } from "@/components/expenses/ExpensesManagement";
 import { OfflineIndicator } from "@/components/system/OfflineIndicator";
 import { PerformanceMonitor } from "@/components/system/PerformanceMonitor";
+import { AdvancedReports } from "@/components/reports/AdvancedReports";
+import { OperatorLogin } from "@/components/auth/OperatorLogin";
+import { RealTimeMetrics } from "@/components/dashboard/RealTimeMetrics";
+import { SequentialNumbers } from "@/components/sales/SequentialNumbers";
 
 // ✅ importamos os mocks e tipos
 import { mockProducts, Product, mockCustomers, Customer } from "@/components/sales";
@@ -77,6 +81,7 @@ const Index = () => {
   const [customers, setCustomers] = useState<Customer[]>(loadCustomersFromLocalStorage);
   const [sales, setSales] = useState<any[]>(getInitialSales);
   const [productions, setProductions] = useState<any[]>(getInitialProductions);
+  const [currentOperator, setCurrentOperator] = useState<any>(null);
 
   // Persistência - usando useCallback para evitar loops infinitos
   const saveToLocalStorage = useCallback((key: string, data: any) => {
@@ -221,7 +226,13 @@ const Index = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard products={products} sales={sales} onClearAllData={clearAllData} onAction={handleQuickAction} />;
+        return (
+          <div className="space-y-6">
+            <Dashboard products={products} sales={sales} onClearAllData={clearAllData} onAction={handleQuickAction} />
+            <RealTimeMetrics />
+            <SequentialNumbers />
+          </div>
+        );
       case "products":
         return (
           <ProductManagement
@@ -237,6 +248,7 @@ const Index = () => {
             customers={customers}
             setCustomers={setCustomers}
             onSaleCreated={handleSaleCreated}
+            currentOperator={currentOperator}
           />
         );
       case "stock":
@@ -268,7 +280,7 @@ const Index = () => {
       case "withdrawals":
         return <WithdrawalsManagement />;
       case "reports":
-        return <Reports />;
+        return <AdvancedReports />;
       case "manufacturing":
         return (
           <Manufacturing 
@@ -287,9 +299,17 @@ const Index = () => {
       case "advanced-stock":
         return <AdvancedStockManagement products={products} setProducts={setProducts} />;
       case "settings":
-        return <Settings onProductAdded={handleProductAdded} onClearAllData={clearAllData} />;
+        return (
+          <div className="space-y-6">
+            <OperatorLogin
+              onOperatorLogin={setCurrentOperator}
+              currentOperator={currentOperator}
+            />
+            <Settings onProductAdded={handleProductAdded} onClearAllData={clearAllData} />
+          </div>
+        );
       default:
-        return <Dashboard />;
+        return <Dashboard products={products} sales={sales} onClearAllData={clearAllData} onAction={handleQuickAction} />;
     }
   };
 

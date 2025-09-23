@@ -1,0 +1,69 @@
+{
+  "name": "Sistema PDV - Gesso Primus",
+  "short_name": "PDV Gesso",
+  "description": "Sistema completo de Ponto de Venda para gestão comercial",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/lovable-uploads/gessoprimus.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/lovable-uploads/gessoprimus.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [
+    {
+      "src": "/lovable-uploads/gesso.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Nova Venda",
+      "short_name": "Vender",
+      "description": "Iniciar uma nova venda",
+      "url": "/?action=new-sale",
+      "icons": [
+        {
+          "src": "/lovable-uploads/gessoprimus.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Relatórios",
+      "short_name": "Relatórios",
+      "description": "Ver relatórios de vendas",
+      "url": "/?tab=reports",
+      "icons": [
+        {
+          "src": "/lovable-uploads/gessoprimus.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "scope": "/",
+  "serviceworker": {
+    "src": "/sw.js",
+    "scope": "/",
+    "update_via_cache": "imports"
+  }
+}

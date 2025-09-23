@@ -49,6 +49,8 @@ export interface Sale {
   status: "pago" | "pendente" | "completed";
   customer: Customer;
   discount?: number; // Added discount field
+  operatorId?: string;
+  operatorName?: string;
 }
 
 export interface Budget {
