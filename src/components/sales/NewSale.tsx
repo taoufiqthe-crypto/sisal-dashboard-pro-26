@@ -162,6 +162,12 @@ export function NewSale({
       }
     }
 
+    // Validação adicional: se não há método de pagamento selecionado para outros métodos
+    if (!selectedPaymentMethod) {
+      toast.error("Selecione uma forma de pagamento!");
+      return;
+    }
+
     const total = calculateTotal();
     const profit = calculateProfit();
     const paid = parseFloat(amountPaid) || total;

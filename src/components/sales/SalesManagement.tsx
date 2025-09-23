@@ -23,6 +23,7 @@ import { SalesYear } from "./SalesYear";
 import { SalesHistory } from "./SalesHistory";
 import { SalesByPayment } from "./SalesByPayment";
 import { SalesAnalytics } from "./SalesAnalytics";
+import { DataImporter } from "../imports/DataImporter";
 import {
   Sale,
   Product,
@@ -123,7 +124,7 @@ export function SalesManagement({
   return (
     <div className="space-y-6">
       <Tabs defaultValue="pdv" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pdv" className="flex items-center gap-2">
             <Monitor className="w-4 h-4" />
             PDV Moderno
@@ -131,6 +132,10 @@ export function SalesManagement({
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Relatórios de Vendas
+          </TabsTrigger>
+          <TabsTrigger value="imports" className="flex items-center gap-2">
+            <PlusCircle className="w-4 h-4" />
+            Importar Dados
           </TabsTrigger>
         </TabsList>
         
@@ -175,6 +180,37 @@ export function SalesManagement({
             sales={sales} 
             formatCurrency={(value: number) => `R$ ${value.toFixed(2)}`}
             onSaleDeleted={deleteSale}
+          />
+        </TabsContent>
+
+        <TabsContent value="imports" className="space-y-6">
+          <DataImporter 
+            onProductsImported={(newProducts) => {
+              if (setProducts) {
+                setProducts(prev => [...prev, ...newProducts]);
+              }
+              toast.success(`${newProducts.length} produtos importados!`);
+            }}
+            onSalesImported={(newSales) => {
+              // Adicionar vendas importadas ao localStorage para compatibilidade
+              const storedSales = JSON.parse(localStorage.getItem('sales') || '[]');
+              const updatedSales = [...newSales, ...storedSales];
+              localStorage.setItem('sales', JSON.stringify(updatedSales));
+              
+              // Criar vendas no Supabase
+              newSales.forEach(sale => {
+                createSale({
+                  cart: sale.cart || [],
+                  total: sale.total,
+                  paymentMethod: sale.paymentMethod,
+                  customerId: sale.customer?.id !== 0 ? sale.customer?.id : undefined,
+                  discount: 0,
+                  date: new Date(sale.date)
+                });
+              });
+              
+              toast.success(`${newSales.length} vendas importadas!`);
+            }}
           />
         </TabsContent>
       </Tabs>

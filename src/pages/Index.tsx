@@ -10,7 +10,7 @@ import { StockManagement } from "@/components/stock/StockManagement";
 import { Reports } from "@/components/reports/Reports";
 import { WithdrawalsManagement } from "@/components/withdrawals/WithdrawalsManagement";
 import { Settings } from "@/components/Settings/Settings";
-import { Manufacturing } from "@/components/Manufacturing/Manufacturing";
+import { ManufacturingTabs } from "@/components/Manufacturing/ManufacturingTabs";
 import { Terminal } from "@/components/terminal/Terminal";
 import { BudgetManagement } from "@/components/budget/BudgetManagement";
 import { CustomerManagement } from "@/components/customers/CustomerManagement";
@@ -283,7 +283,7 @@ const Index = () => {
         return <AdvancedReports />;
       case "manufacturing":
         return (
-          <Manufacturing 
+          <ManufacturingTabs 
             onTabChange={setActiveTab}
             onProductionToStock={handleProductionToStock}
             productions={productions}
