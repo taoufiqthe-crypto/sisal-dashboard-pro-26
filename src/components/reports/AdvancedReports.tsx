@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DateRange } from 'react-day-picker';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { Download, FileText, Users, TrendingUp, DollarSign } from 'lucide-react';
+import { Download, FileText, Users, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -14,6 +14,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart
+} from 'recharts';
 import * as XLSX from 'xlsx';
 import { useSalesData } from '@/hooks/useSalesData';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -130,10 +147,11 @@ export function AdvancedReports() {
       </div>
 
       <Tabs defaultValue="products" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="products">Produtos</TabsTrigger>
           <TabsTrigger value="profit">Lucro</TabsTrigger>
           <TabsTrigger value="operators">Operadores</TabsTrigger>
+          <TabsTrigger value="charts">Gráficos</TabsTrigger>
           <TabsTrigger value="export">Exportar</TabsTrigger>
         </TabsList>
 
@@ -283,6 +301,126 @@ export function AdvancedReports() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="charts">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de Produtos Mais Vendidos */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Top 5 Produtos Mais Vendidos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topProducts.slice(0, 5)}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        name === 'quantity' ? `${value} unidades` : formatCurrency(value as number),
+                        name === 'quantity' ? 'Quantidade' : name === 'revenue' ? 'Receita' : 'Lucro'
+                      ]}
+                    />
+                    <Legend />
+                    <Bar dataKey="quantity" fill="hsl(var(--primary))" name="Quantidade" />
+                    <Bar dataKey="revenue" fill="hsl(var(--chart-2))" name="Receita" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Gráfico de Pizza - Métodos de Pagamento */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Métodos de Pagamento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Dinheiro', value: filteredSales.filter(s => s.paymentMethod === 'dinheiro').length },
+                        { name: 'PIX', value: filteredSales.filter(s => s.paymentMethod === 'pix').length },
+                        { name: 'Cartão Crédito', value: filteredSales.filter(s => s.paymentMethod === 'credito').length },
+                        { name: 'Cartão Débito', value: filteredSales.filter(s => s.paymentMethod === 'debito').length },
+                      ].filter(item => item.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Dinheiro', value: filteredSales.filter(s => s.paymentMethod === 'dinheiro').length },
+                        { name: 'PIX', value: filteredSales.filter(s => s.paymentMethod === 'pix').length },
+                        { name: 'Cartão Crédito', value: filteredSales.filter(s => s.paymentMethod === 'credito').length },
+                        { name: 'Cartão Débito', value: filteredSales.filter(s => s.paymentMethod === 'debito').length },
+                      ].filter(item => item.value > 0).map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={[
+                            'hsl(var(--chart-1))',
+                            'hsl(var(--chart-2))', 
+                            'hsl(var(--chart-3))',
+                            'hsl(var(--chart-4))'
+                          ][index % 4]} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Gráfico de Área - Vendas por Período */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Evolução de Vendas e Lucro</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={profitAnalysis}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Legend />
+                    <Area 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stackId="1" 
+                      stroke="hsl(var(--primary))" 
+                      fill="hsl(var(--primary))" 
+                      fillOpacity={0.6}
+                      name="Receita"
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="profit" 
+                      stackId="2" 
+                      stroke="hsl(var(--chart-2))" 
+                      fill="hsl(var(--chart-2))" 
+                      fillOpacity={0.6}
+                      name="Lucro"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="export">

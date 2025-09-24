@@ -468,37 +468,42 @@ export function NewSale({
           </div>
         ) : (
           /* Formulário Produto Avulso */
-          <div className="flex space-x-2">
-            <div className="flex-1">
-              <Input
-                placeholder="Nome do produto"
-                value={newProductName}
-                onChange={(e) => setNewProductName(e.target.value)}
-              />
+          <div className="space-y-3">
+            <div className="flex space-x-2">
+              <div className="flex-1">
+                <Input
+                  placeholder="Nome do produto"
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                />
+              </div>
+              <div className="w-28">
+                <Input
+                  placeholder="Preço (R$)"
+                  type="number"
+                  step="0.01"
+                  value={newProductPrice}
+                  onChange={(e) => setNewProductPrice(e.target.value)}
+                />
+              </div>
+              <div className="w-20">
+                <Input
+                  type="number"
+                  placeholder="Qtd"
+                  value={currentQuantity}
+                  onChange={(e) => setCurrentQuantity(e.target.value)}
+                />
+              </div>
+              <Button
+                onClick={addManualProductToSale}
+                disabled={!newProductName || !newProductPrice || !currentQuantity}
+              >
+                Adicionar
+              </Button>
             </div>
-            <div className="w-28">
-              <Input
-                placeholder="Preço (R$)"
-                type="number"
-                step="0.01"
-                value={newProductPrice}
-                onChange={(e) => setNewProductPrice(e.target.value)}
-              />
+            <div className="text-sm text-muted-foreground">
+              💡 Após adicionar, você pode adicionar mais produtos ou finalizar a venda
             </div>
-            <div className="w-20">
-              <Input
-                type="number"
-                placeholder="Qtd"
-                value={currentQuantity}
-                onChange={(e) => setCurrentQuantity(e.target.value)}
-              />
-            </div>
-            <Button
-              onClick={addManualProductToSale}
-              disabled={!newProductName || !newProductPrice || !currentQuantity}
-            >
-              Adicionar
-            </Button>
           </div>
         )}
       </div>

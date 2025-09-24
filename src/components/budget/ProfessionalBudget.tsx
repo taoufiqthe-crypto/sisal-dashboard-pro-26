@@ -545,21 +545,22 @@ export function ProfessionalBudget({ products, onBudgetCreated }: ProfessionalBu
         validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
 
-      // Salvar no localStorage para compatibilidade
-      const storedBudgets = JSON.parse(localStorage.getItem('budgets') || '[]');
-      storedBudgets.unshift(budget);
-      localStorage.setItem('budgets', JSON.stringify(storedBudgets));
-
-      if (onBudgetCreated) {
+      // Usar budgetService para salvar no Supabase
+      const { budgetService } = await import('@/services/budgetService');
+      const success = await budgetService.createBudget(budget);
+      
+      if (success && onBudgetCreated) {
         onBudgetCreated(budget);
       }
 
-      toast.success("Orçamento salvo com sucesso!", {
-        description: `Orçamento #${budget.budgetNumber} criado para ${customerData.name}`
-      });
-      
-      setIsDialogOpen(false);
-      resetForm();
+      if (success) {
+        toast.success("Orçamento salvo com sucesso!", {
+          description: `Orçamento #${budget.budgetNumber} criado para ${customerData.name}`
+        });
+        
+        setIsDialogOpen(false);
+        resetForm();
+      }
     } catch (error) {
       console.error('Erro ao salvar orçamento:', error);
       toast.error("Erro ao salvar orçamento. Tente novamente.");
