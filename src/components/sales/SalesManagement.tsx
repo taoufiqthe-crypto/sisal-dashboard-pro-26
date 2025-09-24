@@ -151,26 +151,26 @@ export function SalesManagement({
         <TabsContent value="reports" className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-2xl font-bold">Relatórios de Vendas</h3>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Nova Venda Manual
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Nova Venda Manual</DialogTitle>
-                </DialogHeader>
-                <NewSale
-                  products={products}
-                  customers={customers}
-                  setCustomers={setCustomers}
-                  onSaleCreated={handleSaleCreated}
-                  onClose={() => {}}
-                />
-              </DialogContent>
-            </Dialog>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Nova Venda Manual
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Nova Venda Manual</DialogTitle>
+                  </DialogHeader>
+                  <NewSale
+                    products={products}
+                    customers={customers}
+                    setCustomers={setCustomers}
+                    onSaleCreated={handleSaleCreated}
+                    onClose={() => setIsDialogOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
           </div>
 
           {/* Componente de Analytics Completo */}

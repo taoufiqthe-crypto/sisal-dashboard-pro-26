@@ -597,7 +597,7 @@ export function NewSale({
       )}
 
       {/* Ações */}
-      <div className="flex justify-end space-x-2 pt-4 border-t">
+      <div className="sticky bottom-0 bg-background flex justify-end space-x-2 pt-4 border-t">
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
