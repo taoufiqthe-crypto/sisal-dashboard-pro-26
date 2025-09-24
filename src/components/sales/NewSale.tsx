@@ -56,7 +56,6 @@ export function NewSale({
   const [newCustomerEmail, setNewCustomerEmail] = useState("");
 
   // Estados para produto avulso
-  const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newProductName, setNewProductName] = useState("");
   const [newProductPrice, setNewProductPrice] = useState("");
   const [newProductCost, setNewProductCost] = useState("");
@@ -112,7 +111,6 @@ export function NewSale({
     setNewProductPrice("");
     setNewProductCost("");
     setCurrentQuantity("");
-    setIsAddingProduct(false);
     toast.success(`${newProductName} adicionado à venda!`);
   }, [newProductName, newProductPrice, currentQuantity]);
 
@@ -206,7 +204,6 @@ export function NewSale({
       }
       setSelectedPaymentMethod("dinheiro");
       setIsAddingCustomer(false);
-      setIsAddingProduct(false);
       setNewCustomerName("");
       setNewCustomerPhone("");
       setNewCustomerEmail("");
@@ -231,7 +228,8 @@ export function NewSale({
     saleDate,
     selectedCustomer,
     onSaleCreated,
-    onClose
+    onClose,
+    keepSaleDate
   ]);
 
   return (
@@ -383,34 +381,13 @@ export function NewSale({
         </div>
       )}
 
-      {/* Seleção de Produto ou Produto Avulso */}
+      {/* Adicionar Produtos */}
       <div className="space-y-4">
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={!isAddingProduct ? "default" : "outline"}
-            onClick={() => {
-              setIsAddingProduct(false);
-              setNewProductName("");
-              setNewProductPrice("");
-              setNewProductCost("");
-            }}
-            className="flex-1"
-          >
-            Produto Cadastrado
-          </Button>
-          <Button
-            type="button"
-            variant={isAddingProduct ? "default" : "outline"}
-            onClick={() => setIsAddingProduct(true)}
-            className="flex-1"
-          >
-            Produto Avulso
-          </Button>
-        </div>
-
-        {!isAddingProduct ? (
-          /* Seleção de Produto Cadastrado */
+        <Label>Adicionar Produtos</Label>
+        
+        {/* Seleção de Produto Cadastrado */}
+        <div className="space-y-3 p-4 border rounded-lg">
+          <h4 className="font-medium text-sm">Produtos do Estoque</h4>
           <div className="flex space-x-2">
             <div className="flex-1">
               <Popover>
@@ -466,46 +443,48 @@ export function NewSale({
               Adicionar
             </Button>
           </div>
-        ) : (
-          /* Formulário Produto Avulso */
-          <div className="space-y-3">
-            <div className="flex space-x-2">
-              <div className="flex-1">
-                <Input
-                  placeholder="Nome do produto"
-                  value={newProductName}
-                  onChange={(e) => setNewProductName(e.target.value)}
-                />
-              </div>
-              <div className="w-28">
-                <Input
-                  placeholder="Preço (R$)"
-                  type="number"
-                  step="0.01"
-                  value={newProductPrice}
-                  onChange={(e) => setNewProductPrice(e.target.value)}
-                />
-              </div>
-              <div className="w-20">
-                <Input
-                  type="number"
-                  placeholder="Qtd"
-                  value={currentQuantity}
-                  onChange={(e) => setCurrentQuantity(e.target.value)}
-                />
-              </div>
-              <Button
-                onClick={addManualProductToSale}
-                disabled={!newProductName || !newProductPrice || !currentQuantity}
-              >
-                Adicionar
-              </Button>
+        </div>
+
+        {/* Produto Avulso */}
+        <div className="space-y-3 p-4 border rounded-lg">
+          <h4 className="font-medium text-sm">Produto Avulso</h4>
+          <div className="flex space-x-2">
+            <div className="flex-1">
+              <Input
+                placeholder="Nome do produto"
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+              />
             </div>
-            <div className="text-sm text-muted-foreground">
-              💡 Após adicionar, você pode adicionar mais produtos ou finalizar a venda
+            <div className="w-28">
+              <Input
+                placeholder="Preço (R$)"
+                type="number"
+                step="0.01"
+                value={newProductPrice}
+                onChange={(e) => setNewProductPrice(e.target.value)}
+              />
             </div>
+            <div className="w-20">
+              <Input
+                type="number"
+                placeholder="Qtd"
+                value={currentQuantity}
+                onChange={(e) => setCurrentQuantity(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={addManualProductToSale}
+              disabled={!newProductName || !newProductPrice || !currentQuantity}
+            >
+              Adicionar
+            </Button>
           </div>
-        )}
+        </div>
+        
+        <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+          💡 Você pode adicionar produtos do estoque ou criar produtos avulsos. Adicione quantos produtos desejar antes de finalizar a venda.
+        </div>
       </div>
 
       {/* Lista de produtos adicionados */}
